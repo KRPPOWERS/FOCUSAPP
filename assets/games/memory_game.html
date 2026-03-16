@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game - Focus Break</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .info-box {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .card:hover:not(.matched):not(.flipped) {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .card.flipped,
+        .card.matched {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .card.matched {
+            background: #e8f4f8;
+            cursor: default;
+        }
+
+        .card:disabled {
+            cursor: not-allowed;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .exit-btn {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .exit-btn:hover {
+            background: #d0d0d0;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            min-height: 30px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .win-message {
+            color: #4caf50;
+            font-size: 24px;
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .timer {
+            font-size: 32px;
+            color: #e8e8e8;
+            margin-bottom: 20px;
+        }
+
+        .timer span {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Memory Game</h1>
+        <p class="subtitle">Find all matching pairs to continue your focus session!</p>
+
+        <div class="game-info">
+            <div class="info-box">
+                <div class="info-label">Matched</div>
+                <div class="info-value"><span id="matches">0</span>/8</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Moves</div>
+                <div class="info-value" id="moves">0</div>
+            </div>
+        </div>
+
+        <div class="timer">
+            Time: <span id="timer">02:00</span>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="message" id="message"></div>
+
+        <div class="button-group">
+            <button class="reset-btn" onclick="resetGame()">🔄 New Game</button>
+            <button class="exit-btn" onclick="exitGame()">✕ Exit</button>
+        </div>
+    </div>
+
+    <script>
+        const CARD_VALUES = ['🍎', '🎨', '🎵', '🚀', '🌟', '📚', '💡', '⚡'];
+        const GAME_DURATION = 120; // 2 minutes in seconds
+
+        let gameBoard = [];
+        let flipped = [];
+        let matched = 0;
+        let moves = 0;
+        let gameActive = true;
+        let timeLeft = GAME_DURATION;
+        let timerInterval = null;
+
+        function initGame() {
+            // Create pairs of cards
+            gameBoard = [...CARD_VALUES, ...CARD_VALUES].sort(() => Math.random() - 0.5);
+            matched = 0;
+            moves = 0;
+            flipped = [];
+            gameActive = true;
+            timeLeft = GAME_DURATION;
+
+            renderBoard();
+            updateInfo();
+            startTimer();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('gameBoard');
+            boardEl.innerHTML = '';
+
+            gameBoard.forEach((value, index) => {
+                const card = document.createElement('button');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.value = value;
+                card.textContent = '?';
+                card.onclick = () => flipCard(index, card);
+                boardEl.appendChild(card);
+            });
+        }
+
+        function flipCard(index, cardEl) {
+            if (!gameActive || flipped.length >= 2 || flipped.includes(index)) return;
+
+            flipped.push(index);
+            cardEl.classList.add('flipped');
+            cardEl.textContent = gameBoard[index];
+
+            if (flipped.length === 2) {
+                moves++;
+                updateInfo();
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [idx1, idx2] = flipped;
+            const cards = document.querySelectorAll('.card');
+
+            if (gameBoard[idx1] === gameBoard[idx2]) {
+                // Match found
+                matched++;
+                cards[idx1].classList.add('matched');
+                cards[idx2].classList.add('matched');
+                flipped = [];
+                updateInfo();
+
+                if (matched === CARD_VALUES.length) {
+                    winGame();
+                }
+            } else {
+                // No match
+                setTimeout(() => {
+                    cards[idx1].classList.remove('flipped');
+                    cards[idx2].classList.remove('flipped');
+                    cards[idx1].textContent = '?';
+                    cards[idx2].textContent = '?';
+                    flipped = [];
+                }, 1000);
+            }
+        }
+
+        function updateInfo() {
+            document.getElementById('matches').textContent = matched;
+            document.getElementById('moves').textContent = moves;
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function winGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            
+            const messageEl = document.getElementById('message');
+            messageEl.className = 'message win-message';
+            messageEl.textContent = `🎉 You won! Great focus! 
+                
+Moves: ${moves} | Time: ${GAME_DURATION - timeLeft}s`;
+
+            setTimeout(() => {
+                if (confirm('Great job! Ready to go back to work? 💪')) {
+                    exitGame();
+                }
+            }, 3000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            
+            const messageEl = document.getElementById('message');
+            messageEl.className = 'message';
+            messageEl.textContent = '⏱️ Time is up! Go back to focusing! 💪';
+
+            setTimeout(() => {
+                exitGame();
+            }, 2000);
+        }
+
+        function resetGame() {
+            initGame();
+            document.getElementById('message').textContent = '';
+        }
+
+        function exitGame() {
+            clearInterval(timerInterval);
+            // Call native function if available
+            if (typeof Android !== 'undefined') {
+                Android.exitGame();
+            } else {
+                alert('Game ended! Keep focusing! 💪');
+            }
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>

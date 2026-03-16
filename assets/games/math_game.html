@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Math - Focus Break</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 40px;
+            gap: 10px;
+        }
+
+        .info-box {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #f5576c;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .problem {
+            font-size: 48px;
+            font-weight: bold;
+            color: #f5576c;
+            margin: 40px 0 30px;
+            font-family: 'Courier New', monospace;
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 5px solid #f5576c;
+        }
+
+        .answers {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .answer-btn {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .answer-btn:hover {
+            border-color: #f5576c;
+            color: #f5576c;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        .answer-btn.correct {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .answer-btn.incorrect {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        .timer {
+            font-size: 32px;
+            color: #f5576c;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .message {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #f5576c;
+            min-height: 30px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .score-display {
+            color: #4caf50;
+            font-size: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .exit-btn {
+            background: #f5576c;
+            color: white;
+            width: 100%;
+        }
+
+        .exit-btn:hover {
+            background: #d43f54;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 Quick Math</h1>
+        <p class="subtitle">Solve fast! Get 5 correct to unlock focus! ⚡</p>
+
+        <div class="game-info">
+            <div class="info-box">
+                <div class="info-label">Correct</div>
+                <div class="info-value"><span id="correct">0</span>/5</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Streak</div>
+                <div class="info-value" id="streak">0</div>
+            </div>
+        </div>
+
+        <div class="timer">
+            ⏱️ <span id="timer">02:00</span>
+        </div>
+
+        <div class="problem" id="problem">?</div>
+
+        <div class="answers" id="answers"></div>
+
+        <div class="message" id="message"></div>
+
+        <button class="exit-btn" onclick="exitGame()">✕ Exit Game</button>
+    </div>
+
+    <script>
+        const GAME_DURATION = 120; // 2 minutes
+        const CORRECT_NEEDED = 5;
+
+        let correct = 0;
+        let streak = 0;
+        let timeLeft = GAME_DURATION;
+        let gameActive = true;
+        let timerInterval = null;
+        let currentProblem = null;
+
+        function generateProblem() {
+            const operators = ['+', '-', '*'];
+            const operator = operators[Math.floor(Math.random() * operators.length)];
+            const a = Math.floor(Math.random() * 20) + 1;
+            const b = Math.floor(Math.random() * 20) + 1;
+
+            let answer;
+            let problem;
+
+            if (operator === '+') {
+                problem = `${a} + ${b}`;
+                answer = a + b;
+            } else if (operator === '-') {
+                problem = `${a} - ${b}`;
+                answer = a - b;
+            } else {
+                problem = `${a} × ${b}`;
+                answer = a * b;
+            }
+
+            // Generate wrong answers
+            const wrongAnswers = new Set();
+            wrongAnswers.add(answer + Math.floor(Math.random() * 10) + 1);
+            wrongAnswers.add(answer - Math.floor(Math.random() * 10) - 1);
+            wrongAnswers.add(Math.floor(Math.random() * 100));
+
+            return {
+                problem,
+                answer,
+                options: [answer, ...Array.from(wrongAnswers).slice(0, 3)].sort(() => Math.random() - 0.5)
+            };
+        }
+
+        function renderProblem() {
+            currentProblem = generateProblem();
+            document.getElementById('problem').textContent = currentProblem.problem;
+
+            const answersEl = document.getElementById('answers');
+            answersEl.innerHTML = '';
+
+            currentProblem.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = option;
+                btn.onclick = () => checkAnswer(option, btn);
+                answersEl.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, btn) {
+            if (!gameActive) return;
+
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            if (selected === currentProblem.answer) {
+                correct++;
+                streak++;
+                btn.classList.add('correct');
+
+                if (correct >= CORRECT_NEEDED) {
+                    winGame();
+                    return;
+                }
+
+                setTimeout(() => {
+                    buttons.forEach(b => b.disabled = false);
+                    renderProblem();
+                }, 800);
+            } else {
+                streak = 0;
+                btn.classList.add('incorrect');
+                
+                // Show correct answer
+                const correctBtn = Array.from(buttons).find(
+                    b => parseInt(b.textContent) === currentProblem.answer
+                );
+                if (correctBtn) {
+                    correctBtn.classList.add('correct');
+                }
+
+                setTimeout(() => {
+                    buttons.forEach(b => b.disabled = false);
+                    buttons.forEach(b => b.classList.remove('correct', 'incorrect'));
+                    renderProblem();
+                }, 1500);
+            }
+
+            updateInfo();
+        }
+
+        function updateInfo() {
+            document.getElementById('correct').textContent = correct;
+            document.getElementById('streak').textContent = streak;
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function winGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = `
+                <div style="font-size: 32px; margin-bottom: 10px;">🎉</div>
+                <div class="score-display">All correct! You're sharp! 🧠</div>
+            `;
+
+            const problemEl = document.getElementById('problem');
+            problemEl.textContent = '✓ Ready to focus!';
+
+            document.querySelectorAll('.answer-btn').forEach(b => b.style.display = 'none');
+
+            setTimeout(() => {
+                const exitBtn = document.querySelector('.exit-btn');
+                exitBtn.textContent = '✓ Return to Focus →';
+                exitBtn.onclick = () => {
+                    if (typeof Android !== 'undefined') {
+                        Android.exitGame();
+                    }
+                };
+            }, 2000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 10px;">⏱️</div>
+                <div>Time's up! You got ${correct}/5</div>
+            `;
+
+            document.querySelectorAll('.answer-btn').forEach(b => {
+                b.style.opacity = '0.5';
+                b.disabled = true;
+            });
+
+            setTimeout(() => {
+                exitGame();
+            }, 2000);
+        }
+
+        function exitGame() {
+            clearInterval(timerInterval);
+            if (typeof Android !== 'undefined') {
+                Android.exitGame();
+            } else {
+                alert(`Game ended! You solved ${correct} problems. Go focus! 💪`);
+            }
+        }
+
+        // Initialize
+        renderProblem();
+        updateInfo();
+        startTimer();
+    </script>
+</body>
+</html>

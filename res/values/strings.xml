@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Focus App</string>
+    <string name="app_description">Stay focused and productive by blocking distracting apps during your focus sessions</string>
+    
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">FocusApp monitors your app usage to help you stay focused during your scheduled focus time. It requires accessibility permissions to detect when you open restricted apps and show you motivational reminders.</string>
+    
+    <!-- Warnings & Messages -->
+    <string name="warning_1">📱 You opened a distracting app! Focus on your goals!</string>
+    <string name="warning_2">⏱️ You have more important things to do right now</string>
+    <string name="warning_3">💪 You can do this! Stay focused!</string>
+    <string name="warning_4">🎯 Remember your goal for this focus session</string>
+    <string name="warning_5">🚀 Push through this distraction!</string>
+    <string name="warning_6">✨ You're almost there! Don't give up!</string>
+    
+    <!-- High Usage Warnings -->
+    <string name="high_usage_title">⏰ High App Usage Alert</string>
+    <string name="high_usage_message">You\'ve spent too much time on this app today. Consider taking a break!</string>
+    
+    <!-- Navigation -->
+    <string name="tab_focus_times">Focus Times</string>
+    <string name="tab_blocked_apps">Blocked Apps</string>
+    <string name="tab_analytics">Analytics</string>
+    <string name="tab_settings">Settings</string>
+</resources>
